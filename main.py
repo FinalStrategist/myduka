@@ -176,18 +176,7 @@ def products():
         conn.commit()
         return redirect("/products")  
 
-# @app.route("/sales",methods=["GET", "POST"])
-# @login_required
-# def salez():
-#     if request.method=="POST":
-#         pid=request.form["pid"]
-#         amount=request.form["amount"]
-#         print(pid,amount)
-#         query_s = "INSERT INTO sales(pid, quantity, created_at) VALUES (%s, %s, now())"
-#         cur.execute(query_s, (pid, amount))
-#         cur.execute(query_s)
-#         conn.commit()
-#         return redirect("/sales")
+# Implement proper error handling
 @app.route("/sales", methods=["GET", "POST"])
 def salez():
     if request.method == "POST":
