@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,redirect,session,url_for
+from flask import Flask,render_template,request,redirect,session,url_for, flash
 from database import conn, cur
 from functools import wraps
 
@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.secret_key="myduka123"
 
 #Decorator function is used to give a func/route more functionality
-#It runs before the route function is processed
+#runs before the route function is processed
 
 def login_required(f):
     @wraps(f)
@@ -61,7 +61,7 @@ def dashboardfunc():
 
     #append happens because it is inside a list
     #you can also add an if statement
-    #lx = [i[1].strftime("%B %d, %Y") for i in daily_sales if float(i[0])>60000]
+    lx = [i[1].strftime("%B %d, %Y") for i in daily_sales if float(i[0])>60000]
     cur.execute("SELECT sum (p.selling_price * s.quantity) as Profit, p.name from products as p join sales as s on p.id=s.pid GROUP BY p.name ORDER BY profit desc;")
     profit_per_product=cur.fetchall()
     p=[]
@@ -69,7 +69,32 @@ def dashboardfunc():
     for z in profit_per_product:
         p.append(z[1])
         q.append(z[0])
-    return render_template("dashboard.html",x=x,y=y,p=p,q=q,)
+
+        cur.execute("""
+        SELECT SUM(p.selling_price * s.quantity) AS monthly_sales, 
+               DATE_TRUNC('month', s.created_at) AS month 
+        FROM sales AS s 
+        JOIN products AS p ON p.id = s.pid 
+        GROUP BY month 
+        ORDER BY month;
+    """)
+    monthly_sales = cur.fetchall()
+    m = [i[1].strftime("%B, %Y") for i in monthly_sales]
+    n = [float(i[0]) for i in monthly_sales]
+
+     # Data for the fourth chart (e.g., top 5 products)
+    cur.execute("""
+        SELECT p.name, SUM(p.selling_price * s.quantity) AS total_sales 
+        FROM products AS p 
+        JOIN sales AS s ON p.id = s.pid 
+        GROUP BY p.name 
+        ORDER BY total_sales DESC 
+        LIMIT 5;
+    """)
+    top_products = cur.fetchall()
+    t = [i[0] for i in top_products]
+    u = [float(i[1]) for i in top_products]
+    return render_template("dashboard.html",x=x,y=y,p=p,q=q,m=m, n=n, t=t, u=u)
 
 
 @app.route("/login", methods=["POST","GET"])
@@ -87,18 +112,42 @@ def login():
     else:
         return render_template("login.html")  
 
-@app.route("/register", methods=["GET","POST"])
+
+@app.route("/register", methods=["POST", "GET"])
 def register():
-    if request.method=="GET":
-         return render_template("register.html")
+    if request.method == "POST":
+        # Get form data
+        name = request.form["name"]
+        email = request.form["mail"]
+        password = request.form["passw"]
+        
+        # Check if email already exists
+        cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+        existing_user = cur.fetchone()
+        
+        if existing_user:
+            flash("Email already registered. Please use a different email.", "error")
+            return redirect("/register")  # Redirect back to the registration page
+        
+        # Insert the new user into the database
+        try:
+            cur.execute(
+                "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+                (name, email, password)
+            )
+            conn.commit()  # Commit the transaction
+            flash("Registration successful! Please log in.", "success")
+            return redirect("/login")
+        except Exception as e:
+            conn.rollback()  # Rollback if there's an issue
+            flash(f"An error occurred: {e}", "error")
+            return redirect("/register")
     else:
-        name=request.form["name"]
-        email=request.form["mail"]
-        password=request.form["passw"]
-        query_reg ="insert into users(name,email,password) values('{}','{}','{}')".format(name,email,password)
-        cur.execute(query_reg)
-        conn.commit()
-        return redirect("/dashboard")
+        return render_template("register.html")
+
+
+
+
 
 @app.route("/products", methods=["GET", "POST"])
 #get is fetching from database and post is getting from form which is filled and posted
@@ -127,18 +176,32 @@ def products():
         conn.commit()
         return redirect("/products")  
 
-@app.route("/sales",methods=["GET", "POST"])
+# @app.route("/sales",methods=["GET", "POST"])
 # @login_required
+# def salez():
+#     if request.method=="POST":
+#         pid=request.form["pid"]
+#         amount=request.form["amount"]
+#         print(pid,amount)
+#         query_s = "INSERT INTO sales(pid, quantity, created_at) VALUES (%s, %s, now())"
+#         cur.execute(query_s, (pid, amount))
+#         cur.execute(query_s)
+#         conn.commit()
+#         return redirect("/sales")
+@app.route("/sales", methods=["GET", "POST"])
 def salez():
-    if request.method=="POST":
-        pid=request.form["pid"]
-        amount=request.form["amount"]
-        #print(pid,amount)
-        query_s="insert into sales(pid,quantity,created_at) "\
-        "values('{}',{},{})".format(pid,amount,'now()')
-        cur.execute(query_s)
-        conn.commit()
+    if request.method == "POST":
+        pid = request.form["pid"]
+        amount = request.form["amount"]
+        try:
+            query_s = "INSERT INTO sales(pid, quantity, created_at) VALUES (%s, %s, now())"
+            cur.execute(query_s, (pid, amount))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print("Error:", e)
         return redirect("/sales")
+
     else:
         cur.execute("select * from products")
         products=cur.fetchall()
