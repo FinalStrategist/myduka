@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Supplier</title>
+    <!-- Include your CSS files here -->
+</head>
+<body>
+    <h1>Add Supplier</h1>
+    <form method="post" action="{{ url_for('add_supplier') }}">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        <br>
+        <label for="contact_info">Contact Info:</label>
+        <textarea id="contact_info" name="contact_info"></textarea>
+        <br>
+        <button type="submit">Add Supplier</button>
+    </form>
+    <!-- Include your JS files here -->
+</body>
+</html>

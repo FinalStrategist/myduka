@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Suppliers</title>
+    <!-- Include your CSS files here -->
+</head>
+<body>
+    <h1>Suppliers</h1>
+    <a href="{{ url_for('add_supplier') }}">Add New Supplier</a>
+    <ul>
+        {% for supplier in suppliers %}
+        <li>
+            {{ supplier.name }} - {{ supplier.contact_info }}
+            <a href="{{ url_for('delete_supplier', id=supplier.id) }}">Delete</a>
+        </li>
+        {% endfor %}
+    </ul>
+    <!-- Include your JS files here -->
+</body>
+</html>

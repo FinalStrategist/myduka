@@ -37,6 +37,7 @@ def navb():
 @app.route("/logout")
 def logout():
     session.clear()
+    flash('Logged Out Successfuly', 'info')
     return redirect("/login")
 
 @app.route("/about")
@@ -44,9 +45,12 @@ def about():
     return "About page info is supposed to be displayed on this route"
 
 @app.route("/dashboard")
-# @login_required
+@login_required
 def dashboardfunc():
-    cur.execute("SELECT sum (p.selling_price * s.quantity) as sales, s.created_at from sales as s join products as p on p.id=s.pid GROUP BY created_at ORDER BY created_at;")
+    cur.execute("""SELECT sum (p.selling_price * s.quantity) as sales, 
+                        s.created_at from sales as s join products as p on p.id=s.pid 
+                    GROUP BY created_at 
+                    ORDER BY created_at;""")
     daily_sales=cur.fetchall()
    # print(daily_sales)
     x=[]
@@ -62,7 +66,10 @@ def dashboardfunc():
     #append happens because it is inside a list
     #you can also add an if statement
     lx = [i[1].strftime("%B %d, %Y") for i in daily_sales if float(i[0])>60000]
-    cur.execute("SELECT sum (p.selling_price * s.quantity) as Profit, p.name from products as p join sales as s on p.id=s.pid GROUP BY p.name ORDER BY profit desc;")
+    cur.execute("""SELECT sum (p.selling_price * s.quantity) as Profit,
+                        p.name from products as p join sales as s on p.id=s.pid
+                GROUP BY p.name 
+                ORDER BY profit desc;""")
     profit_per_product=cur.fetchall()
     p=[]
     q=[]
@@ -110,6 +117,7 @@ def login():
             session["email"]= email
             return redirect("/dashboard")
     else:
+        flash('Login Successfuly', 'success')
         return render_template("login.html")  
 
 
@@ -120,6 +128,17 @@ def register():
         name = request.form["name"]
         email = request.form["mail"]
         password = request.form["passw"]
+        password2 = request.form["pass2"]
+
+        # if name.char() < 4:
+        #     flash("Name Cannot be less than 4 characters", category='danger')
+        # elif email < 4:
+        #     flash("Email Invalid!", category='danger')
+        # elif password != password2:
+        #     flash("Passwords do not match", category='danger')
+        # else:
+        #     flash("Account created successfuly!", category='success')
+
         
         # Check if email already exists
         cur.execute("SELECT id FROM users WHERE email = %s", (email,))
@@ -152,13 +171,13 @@ def register():
 @app.route("/products", methods=["GET", "POST"])
 #get is fetching from database and post is getting from form which is filled and posted
 #model view controller uses this to get data from database and send it to view-which works across all frameworks
-# @login_required
+@login_required
 def products():
 
     if request.method == "GET":
         cur.execute("SELECT * FROM products order by id desc")
         products = cur.fetchall()
-        print(products)
+        # print(products)
         return render_template("products.html", products=products)
     else:
         name = request.form["name"]
@@ -178,6 +197,7 @@ def products():
 
 # Implement proper error handling
 @app.route("/sales", methods=["GET", "POST"])
+@login_required
 def salez():
     if request.method == "POST":
         pid = request.form["pid"]
@@ -188,7 +208,7 @@ def salez():
             conn.commit()
         except Exception as e:
             conn.rollback()
-            print("Error:", e)
+            flash("Error:", e)
         return redirect("/sales")
 
     else:
@@ -198,9 +218,43 @@ def salez():
                     "from sales inner join products on sales.pid = products.id")
         sales=cur.fetchall()
         return render_template("sales.html",products=products,sales=sales)
+
+
+@app.route('/suppliers')
+def suppliers():
+    db = get_db()
+    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute('SELECT * FROM suppliers')
+    suppliers = cursor.fetchall()
+    cursor.close()
+    return render_template('suppliers.html', suppliers=suppliers)
+
+@app.route('/suppliers/add', methods=['GET', 'POST'])
+def add_supplier():
+    if request.method == 'POST':
+        name = request.form['name']
+        contact_info = request.form['contact_info']
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute('INSERT INTO suppliers (name, contact_info) VALUES (%s, %s)', (name, contact_info))
+        db.commit()
+        cursor.close()
+        flash('Supplier added successfully!')
+        return redirect(url_for('suppliers'))
+    return render_template('add_supplier.html')
+
+@app.route('/suppliers/delete/<int:id>')
+def delete_supplier(id):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('DELETE FROM suppliers WHERE id = %s', (id,))
+    db.commit()
+    cursor.close()
+    flash('Supplier removed successfully!')
+    return redirect(url_for('suppliers'))
     
 
-app.run(debug=True)
+app.run(debug=1)
 
 
 
