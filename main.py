@@ -221,37 +221,47 @@ def salez():
 
 
 @app.route('/suppliers')
+@login_required
 def suppliers():
-    db = get_db()
-    cursor = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute('SELECT * FROM suppliers')
-    suppliers = cursor.fetchall()
-    cursor.close()
+    cur.execute('SELECT * FROM suppliers ORDER BY id DESC')
+    suppliers = cur.fetchall()
     return render_template('suppliers.html', suppliers=suppliers)
 
 @app.route('/suppliers/add', methods=['GET', 'POST'])
+@login_required
 def add_supplier():
     if request.method == 'POST':
         name = request.form['name']
         contact_info = request.form['contact_info']
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute('INSERT INTO suppliers (name, contact_info) VALUES (%s, %s)', (name, contact_info))
-        db.commit()
-        cursor.close()
-        flash('Supplier added successfully!')
+
+        # Input validation
+        if not name or not contact_info:
+            flash('Name and contact information are required.', 'error')
+            return redirect(url_for('add_supplier'))
+
+        try:
+            cur.execute('INSERT INTO suppliers (name, contact_info) VALUES (%s, %s)', (name, contact_info))
+            conn.commit()
+            flash('Supplier added successfully!', 'success')
+        except Exception as e:
+            conn.rollback()
+            flash(f'Error adding supplier: {e}', 'error')
         return redirect(url_for('suppliers'))
+
     return render_template('add_supplier.html')
 
 @app.route('/suppliers/delete/<int:id>')
+@login_required
 def delete_supplier(id):
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute('DELETE FROM suppliers WHERE id = %s', (id,))
-    db.commit()
-    cursor.close()
-    flash('Supplier removed successfully!')
+    try:
+        cur.execute('DELETE FROM suppliers WHERE id = %s', (id,))
+        conn.commit()
+        flash('Supplier removed successfully!', 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error deleting supplier: {e}', 'error')
     return redirect(url_for('suppliers'))
+
     
 
 app.run(debug=1)
