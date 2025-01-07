@@ -58,16 +58,40 @@
 {% block body %}
     <div class="banner" style="background: url(../static/images/background2.jpg); height: 100vh; width: 100%; object-fit: cover;">
         <h4 align="center">Log In As: </h4>
-        <div class="container">
-          <h2>user <a href="{{ url_for('login')}}"><button>here</button></a></h2>
-          <h2>Admin <a href="{{ url_for('login')}}">login here</a></h2>
-          <h2>Developer <a href="{{ url_for('login')}}">login here</a></h2>
-
-
+        <div class="container" style="margin-top: 40px;">
+      <div class="container">
+        <div class="row">
+          <div class="col">
+            <div class="card" style="width: 18rem;">
+              <div class="card-body">
+                <h5 class="card-title">Daily User</h5>
+                <p class="card-text">Login as the daily user</p>
+                <a href="{{ url_for('login')}}" class="btn btn-primary">Login</a>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card" style="width: 18rem;">
+              <div class="card-body">
+                <h5 class="card-title">The Administrator</h5>
+                <p class="card-text">Login as the Admin</p>
+                <a href="#" class="btn btn-primary">Login</a>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card" style="width: 18rem;">
+              <div class="card-body">
+                <h5 class="card-title">The Developer</h5>
+                <p class="card-text">Login as the Developer.</p>
+                <a href="#" class="btn btn-primary">Login</a>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-    
-  
+  </div>
 
     <script
       src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
